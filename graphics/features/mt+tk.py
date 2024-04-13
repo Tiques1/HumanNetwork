@@ -81,11 +81,15 @@ button.grid(column=1, row=1, sticky='nsew')
 
 # Создаем Frame для сетки
 frame = tk.Frame(root, bg="darkgray")
-frame.grid(row=1, column=0)
+frame.grid(row=1, column=0, sticky='nsew')
 
-new_neuro_button = tk.Button(frame, text='Create', width=10, height=2)
-new_neuro_button.grid(sticky='nsew', row=0, column=0)
-new_neuro_button2 = tk.Button(frame, text='Create', width=10, height=2)
+frame.grid_columnconfigure(0, weight=1)
+frame.grid_columnconfigure(1, weight=1)
+frame.grid_columnconfigure(2, weight=1)
+
+new_neuro_button = tk.Button(frame, text='Button1', width=10, height=2)
+new_neuro_button.grid(row=0, column=0, sticky='nw')
+new_neuro_button2 = tk.Button(frame, text='Button2', width=10, height=2)
 new_neuro_button2.grid(sticky='nsew', row=1, column=1)
 
 
@@ -97,11 +101,6 @@ def add_line(event):
     listbox.update()
     line_objects.append(line_obj)
     canvas.draw_idle()
-
-
-# Привязываем функцию к выбору элемента в листбоксе
-listbox.bind("<<ListboxSelect>>", show_selected_graph)
-button.bind("<Button-1>", add_line)
 
 
 # Показываем окно tkinter
