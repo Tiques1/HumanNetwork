@@ -25,7 +25,7 @@ class Winwow(Tk):
         self.canvas.get_tk_widget().grid(row=0, column=0, sticky='nsew')
         # Создаем листбокс для списка графиков
         self.listbox = tk.Listbox(self, selectmode=tk.SINGLE, bg='lightblue')
-        self.listbox.grid(column=1, row=0, sticky='nsew')
+        self.listbox.grid(column=2, row=0, sticky='nsew')
 
         self.title("Graphs")
 
@@ -39,6 +39,24 @@ class Winwow(Tk):
         self.listbox.update()
         self.line_objects.append(line_obj)
         self.canvas.draw_idle()
+
+    def _scroll_vert(self, value):
+        a = int(self.scale.get())
+        val = int(value)
+        if a < 0 or a > self.cols:
+            return
+        else:
+            self.ax.set_ylim(val-a, val+a)
+        self.fig.canvas.draw_idle()
+
+    def _scroll_horz(self, value):
+        a = int(self.scale.get())
+        val = int(value)
+        if a < 0 or a > self.cols:
+            return
+        else:
+            self.ax.set_xlim(val-a, val+a)
+        self.fig.canvas.draw_idle()
 
     # Создаем функцию для отображения выбранного графика
     def _show_selected_graph(self, event):
@@ -62,9 +80,11 @@ class Winwow(Tk):
 
         self.grid_columnconfigure(0, weight=5)
         self.grid_columnconfigure(1, weight=2)
+        self.grid_columnconfigure(2, weight=1)
 
         self.grid_rowconfigure(0, weight=10)
-        self.grid_rowconfigure(1, weight=3)
+        self.grid_rowconfigure(1, weight=1)
+        self.grid_rowconfigure(2, weight=5)
 
         for line in self.lines:
             x1, y1, x2, y2 = line
@@ -77,7 +97,7 @@ class Winwow(Tk):
 
         # Создаем Frame для сетки
         frame = tk.Frame(self, bg="darkgray")
-        frame.grid(row=1, column=0, sticky='nsew')
+        frame.grid(row=2, column=0, sticky='nsew')
 
         frame.grid_columnconfigure(0, weight=1)
         frame.grid_columnconfigure(1, weight=1)
@@ -88,12 +108,26 @@ class Winwow(Tk):
         new_neuro_button2 = tk.Button(frame, text='Button2', width=10, height=2)
         new_neuro_button2.grid(sticky='nsew', row=1, column=1)
 
-        button = tk.Button(self)
-        button.grid(column=1, row=1, sticky='nsew')
+        button = tk.Button(self, text='Create new')
+        button.grid(column=2, row=1, sticky='nsew')
 
         # Привязываем функцию к выбору элемента в листбоксе
         self.listbox.bind("<<ListboxSelect>>", self._show_selected_graph)
         button.bind("<Button-1>", self.add_line)
+
+        vert = tk.Scale(self, to=0, from_=self.rows, orient=tk.VERTICAL, command=self._scroll_vert)
+        vert.set(self.cols)
+        vert.grid(column=1, row=0, sticky='nsew')
+
+        horz = tk.Scale(self, from_=0, to=self.rows, orient=tk.HORIZONTAL, command=self._scroll_horz)
+        horz.set(self.rows)
+        horz.grid(column=0, row=1, sticky='nsew')
+
+        self.scale = tk.Entry(self)
+        self.scale.grid(column=2, row=2)
+        button = tk.Button(self, text='Reshape', command=lambda: (self._scroll_horz(horz.get()),
+                                                                  self._scroll_vert(vert.get())))
+        button.grid(column=2, row=2, sticky='s')
 
 
 if __name__ == '__main__':
