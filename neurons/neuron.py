@@ -1,30 +1,42 @@
 class Neuron:
-    def __init__(self, a: (()), b: (())):
+    def __init__(self):
         self.treshold = 10  # treshold of activation
         self.returnablity = 0.1  # percent of remaining transmitters
+        self.speed = 5  # the less, the faster signal will be sent after activation
+        self.recovery = 5  # if 0, neuron ready to send signal. -=1 on each step after
+
+        self.sta = self.recovery  # sta - steps to activation
+        self.str = self.recovery  # str - steps to recovery
+
         self.reproductivity = {'activator': 3,
                                'ingibitor': 1}  # amount of transmitters + on each step
-        self.transmitters = {'activator': 0,
-                             'ingibitor': 0}  # amount of transmitters, contains by neuron
-        self.dendrites = a  # coordinates of dendrites e.g. ((0, 1), (0, 2))
-        self.axons = b  # coordinate of axons e.g. ((2, 3), (1, 2))
-        self.signal_speed = 0  # the less, the faster signal will be sent
-        self.steps_to_activation = 0  # if 0, neuron ready to send signal. -=1 on each step
-        self.genom = {'test': 1}  # define how many neurotransmitters will be produced in dependece of input
-        self.current_state = {'activator': 0,
-                              'ingibitor': 0}  # how many transmitters in synapse. before calculations complete
-        self.last_state = {'activator': 0,
-                           'ingibitor': 0}  # after calculations
 
-    def input(self, transmitters):
-        pass
+        self.synapse = [0, 0]
+        self.accumulated = [0, 0]
 
-    #  produce transmitters, plus remainings, handle input, move
-    def step(self, transmitters):
+        self.current_state = [0, 0]  # how many transmitters in synapse; before calculations complete
+        self.last_state = [0, 0]  # after calculations; [activator, ingibitor]
+        # Добавить в будущем функцию производства нейротрансмиттеров
 
-        if self.steps_to_activation == 0:
-            self.steps_to_activation = self.signal_speed
+    def step(self, tm):
+        if self.str > 0:
+            self.str -= 1
+            return
+        if self.sta == 1:
+            self.sta = 0
+            self.synapse[0] += self.accumulated[0]
+            self.synapse[0] += self.accumulated[1]
+            self.str = self.recovery
+            return
+        if self.sta > 0:
+            self.sta -= 1
+            return
+        if self.current_state[0] + self.current_state[1] > self.treshold:
+            self.sta = self.speed
+            return
 
-            return map(lambda x: x/len(self.axons), self.transmitters.values())
-        else:
-            self.steps_to_activation -= 1
+        self.current_state[0] += tm[0]
+        self.current_state[1] += tm[1]
+
+
+

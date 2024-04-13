@@ -6,18 +6,18 @@ from matplotlib.lines import Line2D
 from tkinter import Tk
 
 
-class Winwow(Tk):
-    def __init__(self, rows, cols):
+class Window(Tk):
+    def __init__(self, width, height):
         super().__init__()
-        self.rows = rows
-        self.cols = cols
+        self.rows = width
+        self.cols = height
         self.line_objects = []
         self.lines = [
             [1, 2, 5, 1],  # Линия от (1,1) до (5,1)
             [3, 2, 3, 4],  # Линия от (3,2) до (3,4)
             [2, 4, 6, 4]   # Линия от (2,4) до (6,4)
         ]
-        #  matplot graph
+        # matplot graph
         self.fig = Figure(figsize=(6, 4))
         self.ax = self.fig.add_subplot(111)
         # Создаем виджет Canvas для отображения графика
@@ -46,7 +46,7 @@ class Winwow(Tk):
         if a < 0 or a > self.cols:
             return
         else:
-            self.ax.set_ylim(val-a, val+a)
+            self.ax.set_ylim(val-a//2, val+a//2)
         self.fig.canvas.draw_idle()
 
     def _scroll_horz(self, value):
@@ -55,7 +55,7 @@ class Winwow(Tk):
         if a < 0 or a > self.cols:
             return
         else:
-            self.ax.set_xlim(val-a, val+a)
+            self.ax.set_xlim(val-a//2, val+a//2)
         self.fig.canvas.draw_idle()
 
     # Создаем функцию для отображения выбранного графика
@@ -65,16 +65,16 @@ class Winwow(Tk):
             idx = int(selection[0])  # Переводим индекс в целое число
             for i, line in enumerate(self.line_objects):
                 if i == idx and line.get_visible() is False:
-                    line.set_visible(True)  # Показываем выбранный график
+                    line.set_visible(True)
                 elif i == idx:
-                    line.set_visible(False)  # Скрываем остальные
+                    line.set_visible(False)
             self.fig.canvas.draw_idle()
 
     def _prepare(self):
         for i in range(1, self.rows):
-            self.ax.axhline(i, color='black', lw=0.5)
+            self.ax.axhline(i, color='black', lw=0.1)
         for j in range(1, self.cols):
-            self.ax.axvline(j, color='black', lw=0.5)
+            self.ax.axvline(j, color='black', lw=0.1)
 
         self.ax.axis('off')
 
@@ -125,11 +125,11 @@ class Winwow(Tk):
 
         self.scale = tk.Entry(self)
         self.scale.grid(column=2, row=2)
-        button = tk.Button(self, text='Reshape', command=lambda: (self._scroll_horz(horz.get()),
-                                                                  self._scroll_vert(vert.get())))
+        button = tk.Button(self, text='Zoom', command=lambda: (self._scroll_horz(horz.get()),
+                                                               self._scroll_vert(vert.get())))
         button.grid(column=2, row=2, sticky='s')
 
 
 if __name__ == '__main__':
-    window = Winwow(50, 50)
+    window = Window(50, 50)
     window.mainloop()
