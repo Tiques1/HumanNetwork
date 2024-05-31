@@ -39,6 +39,7 @@ async def main():
     n1 = Neuron('ПЕРВЫЙ')
     n2 = Neuron('ВТОРОЙ')
     net.add(n1)
+    net.add(n2)
     net.link(n1, n2)
 
 if __name__ == '__main__':
