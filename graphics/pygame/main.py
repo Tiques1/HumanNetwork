@@ -1,8 +1,14 @@
+import asyncio
+import threading
+
 import pygame
 import sys
 import pickle
 import tkinter as tk
 from tkinter import filedialog
+
+from neurons.neuron import Neuron as NaturalNeuron
+from neurons.network import Network
 
 # Инициализация Pygame
 pygame.init()
@@ -22,8 +28,10 @@ YELLOW = (255, 255, 0)
 HIGHLIGHT = (255, 255, 255)
 
 # Класс нейрона
-class Neuron:
+class Neuron(NaturalNeuron):
     def __init__(self, x, y, color=WHITE):
+        super().__init__(NaturalNeuron)
+        
         self.x = x
         self.y = y
         self.color = color
@@ -53,8 +61,11 @@ def get_neuron_at_position(neurons, pos, camera_x, camera_y, scale):
 
 # Класс для действий над нейронами
 class NeuronActions:
-    def __init__(self):
-        self.neurons = []
+    def __init__(self, network=Network()):
+        self.network = network
+        self.network.run = True
+        threading.Thread(target=self.network.maincycle).start()
+
         self.selected_neuron = None
         self.dragging = False
         self.camera_dragging = False
@@ -65,10 +76,11 @@ class NeuronActions:
 
     def add_neuron(self, pos):
         neuron = Neuron((pos[0] - self.camera_x) / self.scale, (pos[1] - self.camera_y) / self.scale)
-        self.neurons.append(neuron)
+        self.network.add(neuron)
 
     def select_neuron(self, pos):
-        self.selected_neuron = get_neuron_at_position(self.neurons, pos, self.camera_x, self.camera_y, self.scale)
+        self.selected_neuron = get_neuron_at_position(self.network.neurons.keys(), pos, self.camera_x, self.camera_y,
+                                                      self.scale)
         if self.selected_neuron:
             self.dragging = True
 
@@ -82,14 +94,15 @@ class NeuronActions:
 
     def delete_selected_neuron(self):
         if self.selected_neuron:
-            self.neurons.remove(self.selected_neuron)
-            for neuron in self.neurons:
+            self.network.neurons.pop(self.selected_neuron)
+            for neuron in self.network.neurons.keys():
                 if self.selected_neuron in neuron.connections:
                     neuron.connections.remove(self.selected_neuron)
             self.selected_neuron = None
 
     def add_connection(self, target_neuron):
         if self.selected_neuron and target_neuron:
+            self.network.link(self.selected_neuron, target_neuron)
             self.selected_neuron.add_connection(target_neuron)
 
     def change_selected_neuron_color(self, color):
@@ -97,7 +110,7 @@ class NeuronActions:
             self.selected_neuron.change_color(color)
 
     def draw_neurons(self, screen):
-        for neuron in self.neurons:
+        for neuron in self.network.neurons.keys():
             neuron.draw(screen, self.camera_x, self.camera_y, self.scale)
         if self.selected_neuron:
             selected_pos = (self.camera_x + self.selected_neuron.x * self.scale, self.camera_y + self.selected_neuron.y * self.scale)
@@ -128,11 +141,14 @@ class NeuronActions:
 
     def save_to_file(self, filename):
         with open(filename, 'wb') as f:
-            pickle.dump(self.neurons, f)
+            pickle.dump(self.network, f)
 
     def load_from_file(self, filename):
         with open(filename, 'rb') as f:
-            self.neurons = pickle.load(f)
+            self.network.run = False
+            self.network = pickle.load(f)
+            threading.Thread(target=self.network.maincycle).start()
+            print(self.network.neurons)
 
 def choose_file():
     root = tk.Tk()
@@ -161,7 +177,7 @@ if __name__ == "__main__":
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 pos = pygame.mouse.get_pos()
                 if event.button == 1:  # Левая кнопка мыши
-                    neuron = get_neuron_at_position(neuron_actions.neurons, pos, neuron_actions.camera_x,
+                    neuron = get_neuron_at_position(neuron_actions.network.neurons.keys(), pos, neuron_actions.camera_x,
                                                     neuron_actions.camera_y, neuron_actions.scale)
                     if neuron:
                         neuron_actions.select_neuron(pos)
@@ -169,7 +185,7 @@ if __name__ == "__main__":
                         neuron_actions.add_neuron(pos)
 
                 elif event.button == 3:  # Правая кнопка мыши
-                    neuron = get_neuron_at_position(neuron_actions.neurons, pos, neuron_actions.camera_x,
+                    neuron = get_neuron_at_position(neuron_actions.network.neurons.keys(), pos, neuron_actions.camera_x,
                                                     neuron_actions.camera_y, neuron_actions.scale)
                     if neuron:
                         neuron_actions.add_connection(neuron)
@@ -223,5 +239,6 @@ if __name__ == "__main__":
         neuron_actions.draw_neurons(screen)
         pygame.display.flip()
 
+    neuron_actions.network.run = False
     pygame.quit()
     sys.exit()

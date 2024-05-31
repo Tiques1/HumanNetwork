@@ -1,3 +1,4 @@
+import threading
 import time
 
 from neurons.neuron import Neuron
@@ -8,6 +9,7 @@ class Network:
     def __init__(self):
         #  replace axons and dendrites with it
         self.neurons: {Neuron: [Neuron]} = {}
+        self.run = False
 
     # first to second (one way communication)
     def link(self, n1, n2):
@@ -16,8 +18,9 @@ class Network:
     def add(self, n: Neuron):
         self.neurons[n] = []
 
-    async def maincycle(self):
-        while True:
+    def maincycle(self):
+        c=0
+        while self.run:
             for neuron in self.neurons.keys():
                 neuron.step()
                 tm = neuron.synapse
@@ -31,11 +34,15 @@ class Network:
                 neuron.last_state = neuron.current_state
 
             time.sleep(0.01)
+            c+=1
+            print(f'-----------{c}------------')
 
 
-async def main():
+def main():
     net = Network()
-    asyncio.create_task(net.maincycle())
+    # asyncio.create_task(net.maincycle())
+    net.run = True
+    threading.Thread(target=net.maincycle).start()
     n1 = Neuron('ПЕРВЫЙ')
     n2 = Neuron('ВТОРОЙ')
     net.add(n1)
@@ -43,4 +50,5 @@ async def main():
     net.link(n1, n2)
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    # asyncio.run(main())
+    main()

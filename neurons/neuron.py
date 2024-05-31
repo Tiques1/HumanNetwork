@@ -9,7 +9,7 @@ class Neuron:
         self.speed = 5  # the less, the faster signal will be sent after activation
         self.recovery = 5  # if 0, neuron ready to send signal. -=1 on each step after
 
-        self.sta = 0  # sta - steps to activation. Set > 0 when created to autostart
+        self.sta = 5  # sta - steps to activation. Set > 0 when created to autostart
         self.str = 0  # str - steps to recovery
 
         # outer tm
