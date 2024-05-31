@@ -1,5 +1,8 @@
 import pygame
 import sys
+import pickle
+import tkinter as tk
+from tkinter import filedialog
 
 # Инициализация Pygame
 pygame.init()
@@ -123,74 +126,102 @@ class NeuronActions:
             self.move_camera(dx, dy)
             self.last_mouse_pos = pos
 
-# Инициализация действий над нейронами
-neuron_actions = NeuronActions()
+    def save_to_file(self, filename):
+        with open(filename, 'wb') as f:
+            pickle.dump(self.neurons, f)
 
-# Основной цикл
-running = True
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
+    def load_from_file(self, filename):
+        with open(filename, 'rb') as f:
+            self.neurons = pickle.load(f)
 
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            pos = pygame.mouse.get_pos()
-            if event.button == 1:  # Левая кнопка мыши
-                neuron = get_neuron_at_position(neuron_actions.neurons, pos, neuron_actions.camera_x, neuron_actions.camera_y, neuron_actions.scale)
-                if neuron:
-                    neuron_actions.select_neuron(pos)
-                else:
-                    neuron_actions.add_neuron(pos)
+def choose_file():
+    root = tk.Tk()
+    root.withdraw()
+    filename = filedialog.askopenfilename()
+    return filename
 
-            elif event.button == 3:  # Правая кнопка мыши
-                neuron = get_neuron_at_position(neuron_actions.neurons, pos, neuron_actions.camera_x, neuron_actions.camera_y, neuron_actions.scale)
-                if neuron:
-                    neuron_actions.add_connection(neuron)
-                else:
-                    neuron_actions.start_camera_drag(pos)
+if __name__ == "__main__":
+    # Инициализация действий над нейронами
+    neuron_actions = NeuronActions()
 
-            elif event.button == 4:  # Колесо мыши вверх (увеличение масштаба)
-                neuron_actions.zoom(0.1)
+    # Выбор файла для загрузки
+    filename = choose_file()
+    if filename:
+        neuron_actions.load_from_file(filename)
+    else:
+        print("Выберите файл для загрузки.")
 
-            elif event.button == 5:  # Колесо мыши вниз (уменьшение масштаба)
-                neuron_actions.zoom(-0.1)
+    # Основной цикл
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
 
-        elif event.type == pygame.MOUSEBUTTONUP:
-            if event.button == 1:  # Левая кнопка мыши
-                neuron_actions.deselect_neuron()
-            elif event.button == 3:  # Правая кнопка мыши
-                neuron_actions.stop_camera_drag()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                pos = pygame.mouse.get_pos()
+                if event.button == 1:  # Левая кнопка мыши
+                    neuron = get_neuron_at_position(neuron_actions.neurons, pos, neuron_actions.camera_x,
+                                                    neuron_actions.camera_y, neuron_actions.scale)
+                    if neuron:
+                        neuron_actions.select_neuron(pos)
+                    else:
+                        neuron_actions.add_neuron(pos)
 
-        elif event.type == pygame.MOUSEMOTION:
-            pos = pygame.mouse.get_pos()
-            if neuron_actions.dragging:
-                neuron_actions.move_neuron(pos)
-            if neuron_actions.camera_dragging:
-                neuron_actions.drag_camera(pos)
+                elif event.button == 3:  # Правая кнопка мыши
+                    neuron = get_neuron_at_position(neuron_actions.neurons, pos, neuron_actions.camera_x,
+                                                    neuron_actions.camera_y, neuron_actions.scale)
+                    if neuron:
+                        neuron_actions.add_connection(neuron)
+                    else:
+                        neuron_actions.start_camera_drag(pos)
 
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_r:
-                neuron_actions.change_selected_neuron_color(RED)
-            elif event.key == pygame.K_g:
-                neuron_actions.change_selected_neuron_color(GREEN)
-            elif event.key == pygame.K_b:
-                neuron_actions.change_selected_neuron_color(BLUE)
-            elif event.key == pygame.K_y:
-                neuron_actions.change_selected_neuron_color(YELLOW)
-            elif event.key == pygame.K_DELETE:
-                neuron_actions.delete_selected_neuron()
-            elif event.key == pygame.K_UP:
-                neuron_actions.move_camera(0, -10)
-            elif event.key == pygame.K_DOWN:
-                neuron_actions.move_camera(0, 10)
-            elif event.key == pygame.K_LEFT:
-                neuron_actions.move_camera(-10, 0)
-            elif event.key == pygame.K_RIGHT:
-                neuron_actions.move_camera(10, 0)
+                elif event.button == 4:  # Колесо мыши вверх (увеличение масштаба)
+                    neuron_actions.zoom(0.1)
 
-    screen.fill(BLACK)
-    neuron_actions.draw_neurons(screen)
-    pygame.display.flip()
+                elif event.button == 5:  # Колесо мыши вниз (уменьшение масштаба)
+                    neuron_actions.zoom(-0.1)
 
-pygame.quit()
-sys.exit()
+            elif event.type == pygame.MOUSEBUTTONUP:
+                if event.button == 1:  # Левая кнопка мыши
+                    neuron_actions.deselect_neuron()
+                elif event.button == 3:  # Правая кнопка мыши
+                    neuron_actions.stop_camera_drag()
+
+            elif event.type == pygame.MOUSEMOTION:
+                pos = pygame.mouse.get_pos()
+                if neuron_actions.dragging:
+                    neuron_actions.move_neuron(pos)
+                if neuron_actions.camera_dragging:
+                    neuron_actions.drag_camera(pos)
+
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:
+                    neuron_actions.change_selected_neuron_color(RED)
+                elif event.key == pygame.K_g:
+                    neuron_actions.change_selected_neuron_color(GREEN)
+                elif event.key == pygame.K_b:
+                    neuron_actions.change_selected_neuron_color(BLUE)
+                elif event.key == pygame.K_y:
+                    neuron_actions.change_selected_neuron_color(YELLOW)
+                elif event.key == pygame.K_DELETE:
+                    neuron_actions.delete_selected_neuron()
+                elif event.key == pygame.K_UP:
+                    neuron_actions.move_camera(0, -10)
+                elif event.key == pygame.K_DOWN:
+                    neuron_actions.move_camera(0, 10)
+                elif event.key == pygame.K_LEFT:
+                    neuron_actions.move_camera(-10, 0)
+                elif event.key == pygame.K_RIGHT:
+                    neuron_actions.move_camera(10, 0)
+                elif event.key == pygame.K_s and pygame.key.get_mods() & pygame.KMOD_CTRL:
+                    filename = filedialog.asksaveasfilename(defaultextension=".pkl")
+                    if filename:
+                        neuron_actions.save_to_file(filename)
+
+        screen.fill(BLACK)
+        neuron_actions.draw_neurons(screen)
+        pygame.display.flip()
+
+    pygame.quit()
+    sys.exit()
