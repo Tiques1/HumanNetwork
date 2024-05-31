@@ -27,10 +27,12 @@ class Neuron:
         self.radius = 20
         self.connections = []
 
-    def draw(self, screen):
-        pygame.draw.circle(screen, self.color, (self.x, self.y), self.radius)
+    def draw(self, screen, camera_x, camera_y, scale):
+        neuron_pos = (camera_x + self.x * scale, camera_y + self.y * scale)
+        pygame.draw.circle(screen, self.color, (int(neuron_pos[0]), int(neuron_pos[1])), int(self.radius * scale))
         for connection in self.connections:
-            pygame.draw.line(screen, self.color, (self.x, self.y), (connection.x, connection.y), 2)
+            connection_pos = (camera_x + connection.x * scale, camera_y + connection.y * scale)
+            pygame.draw.line(screen, self.color, (int(neuron_pos[0]), int(neuron_pos[1])), (int(connection_pos[0]), int(connection_pos[1])), int(2 * scale))
 
     def add_connection(self, neuron):
         self.connections.append(neuron)
@@ -38,18 +40,32 @@ class Neuron:
     def change_color(self, color):
         self.color = color
 
+# Функции
+def get_neuron_at_position(neurons, pos, camera_x, camera_y, scale):
+    scaled_pos = ((pos[0] - camera_x) / scale, (pos[1] - camera_y) / scale)
+    for neuron in neurons:
+        if (neuron.x - scaled_pos[0]) ** 2 + (neuron.y - scaled_pos[1]) ** 2 <= (neuron.radius * scale) ** 2:
+            return neuron
+    return None
+
+# Класс для действий над нейронами
 class NeuronActions:
     def __init__(self):
         self.neurons = []
         self.selected_neuron = None
         self.dragging = False
+        self.camera_dragging = False
+        self.camera_x = 0
+        self.camera_y = 0
+        self.scale = 1.0
+        self.last_mouse_pos = None
 
     def add_neuron(self, pos):
-        neuron = Neuron(pos[0], pos[1])
+        neuron = Neuron((pos[0] - self.camera_x) / self.scale, (pos[1] - self.camera_y) / self.scale)
         self.neurons.append(neuron)
 
     def select_neuron(self, pos):
-        self.selected_neuron = get_neuron_at_position(self.neurons, pos)
+        self.selected_neuron = get_neuron_at_position(self.neurons, pos, self.camera_x, self.camera_y, self.scale)
         if self.selected_neuron:
             self.dragging = True
 
@@ -58,8 +74,8 @@ class NeuronActions:
 
     def move_neuron(self, pos):
         if self.dragging and self.selected_neuron:
-            self.selected_neuron.x = pos[0]
-            self.selected_neuron.y = pos[1]
+            self.selected_neuron.x = (pos[0] - self.camera_x) / self.scale
+            self.selected_neuron.y = (pos[1] - self.camera_y) / self.scale
 
     def delete_selected_neuron(self):
         if self.selected_neuron:
@@ -79,23 +95,33 @@ class NeuronActions:
 
     def draw_neurons(self, screen):
         for neuron in self.neurons:
-            neuron.draw(screen)
+            neuron.draw(screen, self.camera_x, self.camera_y, self.scale)
         if self.selected_neuron:
-            pygame.draw.circle(screen, HIGHLIGHT, (self.selected_neuron.x, self.selected_neuron.y), self.selected_neuron.radius, 3)
+            selected_pos = (self.camera_x + self.selected_neuron.x * self.scale, self.camera_y + self.selected_neuron.y * self.scale)
+            pygame.draw.circle(screen, HIGHLIGHT, (int(selected_pos[0]), int(selected_pos[1])), int(self.selected_neuron.radius * self.scale), 3)
 
+    def zoom(self, amount):
+        self.scale += amount
+        if self.scale < 0.1:
+            self.scale = 0.1
 
-# Функции
-def draw_neurons(neurons, screen, selected_neuron):
-    for neuron in neurons:
-        neuron.draw(screen)
-    if selected_neuron:
-        pygame.draw.circle(screen, HIGHLIGHT, (selected_neuron.x, selected_neuron.y), selected_neuron.radius, 3)
+    def move_camera(self, dx, dy):
+        self.camera_x += dx
+        self.camera_y += dy
 
-def get_neuron_at_position(neurons, pos):
-    for neuron in neurons:
-        if (neuron.x - pos[0]) ** 2 + (neuron.y - pos[1]) ** 2 <= neuron.radius ** 2:
-            return neuron
-    return None
+    def start_camera_drag(self, pos):
+        self.camera_dragging = True
+        self.last_mouse_pos = pos
+
+    def stop_camera_drag(self):
+        self.camera_dragging = False
+
+    def drag_camera(self, pos):
+        if self.camera_dragging:
+            dx = pos[0] - self.last_mouse_pos[0]
+            dy = pos[1] - self.last_mouse_pos[1]
+            self.move_camera(dx, dy)
+            self.last_mouse_pos = pos
 
 # Инициализация действий над нейронами
 neuron_actions = NeuronActions()
@@ -110,24 +136,37 @@ while running:
         elif event.type == pygame.MOUSEBUTTONDOWN:
             pos = pygame.mouse.get_pos()
             if event.button == 1:  # Левая кнопка мыши
-                neuron = get_neuron_at_position(neuron_actions.neurons, pos)
+                neuron = get_neuron_at_position(neuron_actions.neurons, pos, neuron_actions.camera_x, neuron_actions.camera_y, neuron_actions.scale)
                 if neuron:
                     neuron_actions.select_neuron(pos)
                 else:
                     neuron_actions.add_neuron(pos)
 
             elif event.button == 3:  # Правая кнопка мыши
-                neuron = get_neuron_at_position(neuron_actions.neurons, pos)
+                neuron = get_neuron_at_position(neuron_actions.neurons, pos, neuron_actions.camera_x, neuron_actions.camera_y, neuron_actions.scale)
                 if neuron:
                     neuron_actions.add_connection(neuron)
+                else:
+                    neuron_actions.start_camera_drag(pos)
+
+            elif event.button == 4:  # Колесо мыши вверх (увеличение масштаба)
+                neuron_actions.zoom(0.1)
+
+            elif event.button == 5:  # Колесо мыши вниз (уменьшение масштаба)
+                neuron_actions.zoom(-0.1)
 
         elif event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:  # Левая кнопка мыши
                 neuron_actions.deselect_neuron()
+            elif event.button == 3:  # Правая кнопка мыши
+                neuron_actions.stop_camera_drag()
 
         elif event.type == pygame.MOUSEMOTION:
             pos = pygame.mouse.get_pos()
-            neuron_actions.move_neuron(pos)
+            if neuron_actions.dragging:
+                neuron_actions.move_neuron(pos)
+            if neuron_actions.camera_dragging:
+                neuron_actions.drag_camera(pos)
 
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_r:
@@ -140,6 +179,14 @@ while running:
                 neuron_actions.change_selected_neuron_color(YELLOW)
             elif event.key == pygame.K_DELETE:
                 neuron_actions.delete_selected_neuron()
+            elif event.key == pygame.K_UP:
+                neuron_actions.move_camera(0, -10)
+            elif event.key == pygame.K_DOWN:
+                neuron_actions.move_camera(0, 10)
+            elif event.key == pygame.K_LEFT:
+                neuron_actions.move_camera(-10, 0)
+            elif event.key == pygame.K_RIGHT:
+                neuron_actions.move_camera(10, 0)
 
     screen.fill(BLACK)
     neuron_actions.draw_neurons(screen)
