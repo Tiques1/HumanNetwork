@@ -13,7 +13,10 @@ class Network:
 
     # first to second (one way communication)
     def link(self, n1, n2):
-        self.neurons[n1].append(n2)
+        if n2 in self.neurons[n1]:
+            self.neurons[n1].remove(n2)
+        else:
+            self.neurons[n1].append(n2)
 
     def add(self, n: Neuron):
         self.neurons[n] = []
@@ -25,7 +28,7 @@ class Network:
                 neuron.step()
                 tm = neuron.synapse
                 neuron.synapse[0] = neuron.synapse[0] * 0.1
-                neuron.synapse[1] = neuron.synapse[0] * 0.1
+                neuron.synapse[1] = neuron.synapse[1] * 0.1
                 amount = len(self.neurons[neuron])
                 for dendrite in self.neurons[neuron]:
                     dendrite.dendrites((tm[0]/amount, tm[1]/amount))
@@ -33,7 +36,7 @@ class Network:
             for neuron in self.neurons.keys():
                 neuron.last_state = neuron.current_state
 
-            time.sleep(0.01)
+            time.sleep(0.5)
             c+=1
             print(f'-----------{c}------------')
 

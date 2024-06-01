@@ -1,6 +1,5 @@
-import asyncio
 import threading
-
+import math
 import pygame
 import sys
 import pickle
@@ -15,7 +14,7 @@ pygame.init()
 
 # Настройки окна
 width, height = 800, 600
-screen = pygame.display.set_mode((width, height))
+screen = pygame.display.set_mode((width, height), pygame.RESIZABLE)
 pygame.display.set_caption("Графический редактор нейронов")
 
 # Цвета
@@ -35,21 +34,83 @@ class Neuron(NaturalNeuron):
         self.x = x
         self.y = y
         self.color = color
+        self.line_color = color
         self.radius = 20
         self.connections = []
+
+    def draw_arrow(self, screen, start_pos, end_pos, color, scale):
+        arrow_size = 10 * scale
+        angle = math.atan2(end_pos[1] - start_pos[1], end_pos[0] - start_pos[0])
+        pygame.draw.line(screen, color, end_pos, (end_pos[0] - arrow_size * math.cos(angle - math.pi / 6),
+                                                   end_pos[1] - arrow_size * math.sin(angle - math.pi / 6)), int(2 * scale))
+        pygame.draw.line(screen, color, end_pos, (end_pos[0] - arrow_size * math.cos(angle + math.pi / 6),
+                                                   end_pos[1] - arrow_size * math.sin(angle + math.pi / 6)), int(2 * scale))
 
     def draw(self, screen, camera_x, camera_y, scale):
         neuron_pos = (camera_x + self.x * scale, camera_y + self.y * scale)
         pygame.draw.circle(screen, self.color, (int(neuron_pos[0]), int(neuron_pos[1])), int(self.radius * scale))
         for connection in self.connections:
             connection_pos = (camera_x + connection.x * scale, camera_y + connection.y * scale)
-            pygame.draw.line(screen, self.color, (int(neuron_pos[0]), int(neuron_pos[1])), (int(connection_pos[0]), int(connection_pos[1])), int(2 * scale))
+            # Найти направление от текущего нейрона к связанному нейрону
+            dx = connection_pos[0] - neuron_pos[0]
+            dy = connection_pos[1] - neuron_pos[1]
+            distance = math.sqrt(dx ** 2 + dy ** 2)
+            if distance > 0:  # Проверка, чтобы избежать деления на 0
+                # Координаты начала линии на границе круга текущего нейрона
+                start_pos = (int(neuron_pos[0] + dx * self.radius * scale / distance),
+                             int(neuron_pos[1] + dy * self.radius * scale / distance))
+                # Координаты конца линии на границе круга связанного нейрона
+                end_pos = (int(connection_pos[0] - dx * connection.radius * scale / distance),
+                           int(connection_pos[1] - dy * connection.radius * scale / distance))
+                pygame.draw.line(screen, self.line_color, start_pos, end_pos, int(2 * scale))
+                self.draw_arrow(screen, start_pos, end_pos, self.line_color, scale)
+
+        # Отображение характеристик
+        font = pygame.font.SysFont('Arial', 12)
+        characteristics = f"sta: {self.sta}, str: {self.str}, dendrite: {self.dendrite[0], self.dendrite[1]}, " \
+                          f"accumulated: {self.accumulated[0], self.accumulated[1]}, synapse: {self.synapse[0], self.synapse[1]}"
+        text = font.render(characteristics, True, WHITE)
+        screen.blit(text, (int(neuron_pos[0] + self.radius * scale + 5), int(neuron_pos[1] - self.radius * scale)))
 
     def add_connection(self, neuron):
-        self.connections.append(neuron)
+        if neuron in self.connections:
+            self.connections.remove(neuron)
+        else:
+            self.connections.append(neuron)
 
     def change_color(self, color):
         self.color = color
+
+    # def _collecting_state(self):
+    #     self.color = self.color_range()
+
+    def _dropping_state(self):
+        # self.color = WHITE
+        self.line_color = self.color_range()
+
+    def _recovery_state(self):
+        self.line_color = WHITE
+
+    def color_range(self):
+        value = sum(self.current_state)
+        min_value = 0
+        max_value = self.treshold
+
+        # Нормируем значение в диапазон от 0 до 1
+        normalized = (value - min_value) / (max_value - min_value)
+        normalized = max(0, min(1, normalized))  # Ограничиваем диапазон от 0 до 1
+
+        # Цвета в формате RGB
+        white = (255, 255, 255)
+        gold = (255, 215, 0)
+
+        # Интерполяция цветов
+        r = int(white[0] + (gold[0] - white[0]) * normalized)
+        g = int(white[1] + (gold[1] - white[1]) * normalized)
+        b = int(white[2] + (gold[2] - white[2]) * normalized)
+
+        return (r, g, b)
+
 
 # Функции
 def get_neuron_at_position(neurons, pos, camera_x, camera_y, scale):
@@ -148,7 +209,6 @@ class NeuronActions:
             self.network.run = False
             self.network = pickle.load(f)
             threading.Thread(target=self.network.maincycle).start()
-            print(self.network.neurons)
 
 def choose_file():
     root = tk.Tk()
