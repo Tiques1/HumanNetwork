@@ -17,7 +17,7 @@ class Neuron:
         self.synapse = [0, 0]  # send to another neuron and reset to zero
 
         # inner tm
-        self.reproductivity = [5, -1]  # amount of transmitters + on each step
+        self.reproductivity = [5, -0.1]  # amount of transmitters + on each step
         self.accumulated = [0, 0]  # move to synapse and set accumulated * returnability
 
         self.current_state = [0, 0]  # how many transmitters in synapse; before calculations complete
@@ -27,12 +27,12 @@ class Neuron:
         self.accumulated[0] += self.reproductivity[0]
         self.accumulated[1] += self.reproductivity[1]
         if self.str > 0:
-            # print(pcns(), self.name, 'ВОССТАНАВЛИВАЮСЬ')
+            print(pcns(), self.name, 'ВОССТАНАВЛИВАЮСЬ')
             self._recovery_state()
 
             self.str -= 1
         elif self.sta == 1:
-            # print(pcns(), self.name, 'ВЫБРАСЫВАЮ')
+            print(pcns(), self.name, 'ВЫБРАСЫВАЮ')
             self._dropping_state()
 
             self.sta = 0
@@ -42,17 +42,18 @@ class Neuron:
             self.accumulated[1] = self.accumulated[1] * self.returnablity
             self.str = self.recovery
         elif self.sta > 0:
-            # print(pcns(), self.name, 'ПЕРЕДАЮ')
+            print(pcns(), self.name, 'ПЕРЕДАЮ')
             self._givinig_state()
 
             self.sta -= 1
         elif self.last_state[0] + self.last_state[1] > self.treshold:
-            # print(pcns(), self.name, 'АКТИВИРУЮСЬ')
+            print(pcns(), self.name, 'АКТИВИРУЮСЬ')
             self._activating_state()
 
+            self.current_state = [0, 0]
             self.sta = self.speed
         else:
-            # print(pcns(), self.name, 'НАКАПЛИВАЮ')
+            print(pcns(), self.name, 'НАКАПЛИВАЮ')
             self._collecting_state()
 
             self.current_state[0] += self.dendrite[0]
@@ -61,7 +62,7 @@ class Neuron:
             self.dendrite[1] = 0
 
     def dendrites(self, tm):
-        # print(pcns(), self.name, 'ПРИНИМАЮ')
+        print(pcns(), self.name, 'ПРИНИМАЮ')
         self._getting_state()
 
         self.dendrite[0] += tm[0]

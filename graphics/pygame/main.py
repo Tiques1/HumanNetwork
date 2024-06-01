@@ -66,9 +66,12 @@ class Neuron(NaturalNeuron):
                 self.draw_arrow(screen, start_pos, end_pos, self.line_color, scale)
 
         # Отображение характеристик
-        font = pygame.font.SysFont('Arial', 12)
-        characteristics = f"sta: {self.sta}, str: {self.str}, dendrite: {self.dendrite[0], self.dendrite[1]}, " \
-                          f"accumulated: {self.accumulated[0], self.accumulated[1]}, synapse: {self.synapse[0], self.synapse[1]}"
+        font = pygame.font.SysFont('Arial', 16)
+        characteristics = f"sta: {self.sta}, str: {self.str}, dendrite: {round(self.dendrite[0], 2), round(self.dendrite[1], 2)}," \
+                          f"accumulated: {round(self.accumulated[0], 2), round(self.accumulated[1], 2)}, " \
+                          f"synapse: {round(self.synapse[0], 2), round(self.synapse[1], 2)}, " \
+                          f"last: {round(self.last_state[0], 2), round(self.last_state[1], 2)}, " \
+                          f"current: {round(self.current_state[0], 2), round(self.current_state[1], 2)}"
         text = font.render(characteristics, True, WHITE)
         screen.blit(text, (int(neuron_pos[0] + self.radius * scale + 5), int(neuron_pos[1] - self.radius * scale)))
 
@@ -86,7 +89,7 @@ class Neuron(NaturalNeuron):
 
     def _dropping_state(self):
         # self.color = WHITE
-        self.line_color = self.color_range()
+        self.line_color = (255, 215, 0)
 
     def _recovery_state(self):
         self.line_color = WHITE
