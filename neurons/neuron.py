@@ -1,30 +1,87 @@
+from time import perf_counter_ns as pcns
+
+
 class Neuron:
-    def __init__(self, a: (()), b: (())):
+    def __init__(self, name):
+        self.name = name
         self.treshold = 10  # treshold of activation
         self.returnablity = 0.1  # percent of remaining transmitters
-        self.reproductivity = {'activator': 3,
-                               'ingibitor': 1}  # amount of transmitters + on each step
-        self.transmitters = {'activator': 0,
-                             'ingibitor': 0}  # amount of transmitters, contains by neuron
-        self.dendrites = a  # coordinates of dendrites e.g. ((0, 1), (0, 2))
-        self.axons = b  # coordinate of axons e.g. ((2, 3), (1, 2))
-        self.signal_speed = 0  # the less, the faster signal will be sent
-        self.steps_to_activation = 0  # if 0, neuron ready to send signal. -=1 on each step
-        self.genom = {'test': 1}  # define how many neurotransmitters will be produced in dependece of input
-        self.current_state = {'activator': 0,
-                              'ingibitor': 0}  # how many transmitters in synapse. before calculations complete
-        self.last_state = {'activator': 0,
-                           'ingibitor': 0}  # after calculations
+        self.speed = 5  # the less, the faster signal will be sent after activation
+        self.recovery = 5  # if 0, neuron ready to send signal. -=1 on each step after
 
-    def input(self, transmitters):
+        self.sta = 5  # sta - steps to activation. Set > 0 when created to autostart
+        self.str = 0  # str - steps to recovery
+
+        # outer tm
+        self.dendrite = [0, 0]  # recieve from another synaps
+        self.synapse = [0, 0]  # send to another neuron and reset to zero
+
+        # inner tm
+        self.reproductivity = [5, -0.1]  # amount of transmitters + on each step
+        self.accumulated = [0, 0]  # move to synapse and set accumulated * returnability
+
+        self.current_state = [0, 0]  # how many transmitters in synapse; before calculations complete
+        self.last_state = [0, 0]  # after calculations; [activator, ingibitor]
+
+    def step(self):
+        self.accumulated[0] += self.reproductivity[0]
+        self.accumulated[1] += self.reproductivity[1]
+        if self.str > 0:
+            print(pcns(), self.name, 'ВОССТАНАВЛИВАЮСЬ')
+            self._recovery_state()
+
+            self.str -= 1
+        elif self.sta == 1:
+            print(pcns(), self.name, 'ВЫБРАСЫВАЮ')
+            self._dropping_state()
+
+            self.sta = 0
+            self.synapse[0] += self.accumulated[0]
+            self.synapse[1] += self.accumulated[1]
+            self.accumulated[0] = self.accumulated[0] * self.returnablity
+            self.accumulated[1] = self.accumulated[1] * self.returnablity
+            self.str = self.recovery
+        elif self.sta > 0:
+            print(pcns(), self.name, 'ПЕРЕДАЮ')
+            self._givinig_state()
+
+            self.sta -= 1
+        elif self.last_state[0] + self.last_state[1] > self.treshold:
+            print(pcns(), self.name, 'АКТИВИРУЮСЬ')
+            self._activating_state()
+
+            self.current_state = [0, 0]
+            self.sta = self.speed
+        else:
+            print(pcns(), self.name, 'НАКАПЛИВАЮ')
+            self._collecting_state()
+
+            self.current_state[0] += self.dendrite[0]
+            self.current_state[1] += self.dendrite[1]
+            self.dendrite[0] = 0
+            self.dendrite[1] = 0
+
+    def dendrites(self, tm):
+        print(pcns(), self.name, 'ПРИНИМАЮ')
+        self._getting_state()
+
+        self.dendrite[0] += tm[0]
+        self.dendrite[1] += tm[1]
+
+    def _recovery_state(self):
         pass
 
-    #  produce transmitters, plus remainings, handle input, move
-    def step(self, transmitters):
+    def _dropping_state(self):
+        pass
 
-        if self.steps_to_activation == 0:
-            self.steps_to_activation = self.signal_speed
+    def _givinig_state(self):
+        pass
 
-            return map(lambda x: x/len(self.axons), self.transmitters.values())
-        else:
-            self.steps_to_activation -= 1
+    def _activating_state(self):
+        pass
+
+    def _collecting_state(self):
+        pass
+
+    def _getting_state(self):
+        pass
